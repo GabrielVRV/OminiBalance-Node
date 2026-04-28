@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Usuario {
+  id    Int     @id @default(autoincrement())
+  nome  String
+  email String  @unique
+  senha String
+  ativo Boolean @default(true)
+  admin Boolean @default(false)
+
+  contas      Conta[]
+  terceiros   Terceiro[]
+  categorias  Categoria[]
+  transacoes  Transacao[]
+  ativos      Ativo[]
+}
+
+model Conta {
+  id         Int    @id @default(autoincrement())
+  usuario_id Int
+  nome       String
+  tipo       String
+  balanco    Float  @default(0.00)
+
+  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
+  transacoes Transacao[]
+}
+
+model Categoria {
+  id         Int    @id @default(autoincrement())
+  usuario_id Int
+  nome       String
+  tipo       String
+
+  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
+  transacoes Transacao[]
+}
+
+model Terceiro {
+  id         Int    @id @default(autoincrement())
+  usuario_id Int
+  nome       String
+
+  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
+  transacoes Transacao[]
+}
+
+model Transacao {
+  id             Int      @id @default(autoincrement())
+  usuario_id     Int
+  conta_id       Int?
+  categoria_id   Int
+  terceiro_id    Int?
+  valor          Float
+  tipo           String
+  data           DateTime
+  parcela_atual  Int      @default(1)
+  parcela_total  Int      @default(1)
+  pago           Boolean  @default(false)
+  descricao      String?
+
+  usuario    Usuario   @relation(fields: [usuario_id], references: [id])
+  conta      Conta?    @relation(fields: [conta_id], references: [id])
+  categoria  Categoria @relation(fields: [categoria_id], references: [id])
+  terceiro   Terceiro? @relation(fields: [terceiro_id], references: [id])
+}
+
+model Ativo {
+  id           Int      @id @default(autoincrement())
+  usuario_id   Int
+  ticker       String
+  tipo         String
+  quantidade   Float
+  preco_medio  Float
+  data_compra  DateTime
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id])
+}
