@@ -4,8 +4,10 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
+// Tabela de usuários — equivalente à classe Usuario do seu models.py
 model Usuario {
   id    Int     @id @default(autoincrement())
   nome  String
@@ -14,71 +16,39 @@ model Usuario {
   ativo Boolean @default(true)
   admin Boolean @default(false)
 
-  contas      Conta[]
-  terceiros   Terceiro[]
-  categorias  Categoria[]
-  transacoes  Transacao[]
-  ativos      Ativo[]
+  // Relacionamentos — um usuário tem muitas contas, categorias, etc
+  contas     Conta[]
+  categorias Categoria[]
+  terceiros  Terceiro[]
 }
 
+// Tabela de contas bancárias
 model Conta {
   id         Int    @id @default(autoincrement())
-  usuario_id Int
   nome       String
   tipo       String
-  balanco    Float  @default(0.00)
+  balanco    Float  @default(0.0)
 
-  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
-  transacoes Transacao[]
+  // Chave estrangeira — toda conta pertence a um usuário
+  usuario_id Int
+  usuario    Usuario @relation(fields: [usuario_id], references: [id])
 }
 
+// Tabela de categorias de transação
 model Categoria {
-  id         Int    @id @default(autoincrement())
-  usuario_id Int
-  nome       String
-  tipo       String
+  id   Int    @id @default(autoincrement())
+  nome String
+  tipo String
 
-  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
-  transacoes Transacao[]
+  usuario_id Int
+  usuario    Usuario @relation(fields: [usuario_id], references: [id])
 }
 
+// Tabela de terceiros (pessoas/empresas envolvidas em transações)
 model Terceiro {
-  id         Int    @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
+  nome String
+
   usuario_id Int
-  nome       String
-
-  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
-  transacoes Transacao[]
-}
-
-model Transacao {
-  id             Int      @id @default(autoincrement())
-  usuario_id     Int
-  conta_id       Int?
-  categoria_id   Int
-  terceiro_id    Int?
-  valor          Float
-  tipo           String
-  data           DateTime
-  parcela_atual  Int      @default(1)
-  parcela_total  Int      @default(1)
-  pago           Boolean  @default(false)
-  descricao      String?
-
-  usuario    Usuario   @relation(fields: [usuario_id], references: [id])
-  conta      Conta?    @relation(fields: [conta_id], references: [id])
-  categoria  Categoria @relation(fields: [categoria_id], references: [id])
-  terceiro   Terceiro? @relation(fields: [terceiro_id], references: [id])
-}
-
-model Ativo {
-  id           Int      @id @default(autoincrement())
-  usuario_id   Int
-  ticker       String
-  tipo         String
-  quantidade   Float
-  preco_medio  Float
-  data_compra  DateTime
-
-  usuario Usuario @relation(fields: [usuario_id], references: [id])
+  usuario    Usuario @relation(fields: [usuario_id], references: [id])
 }
