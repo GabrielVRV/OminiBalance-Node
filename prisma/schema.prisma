@@ -7,48 +7,113 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Tabela de usuários — equivalente à classe Usuario do seu models.py
 model Usuario {
-  id    Int     @id @default(autoincrement())
-  nome  String
-  email String  @unique
-  senha String
-  ativo Boolean @default(true)
-  admin Boolean @default(false)
+  id         Int      @id @default(autoincrement())
+  nome       String
+  email      String   @unique
+  senha      String
+  ativo      Boolean  @default(true)
+  admin      Boolean  @default(false)
+  criado_em  DateTime @default(now())
 
-  // Relacionamentos — um usuário tem muitas contas, categorias, etc
-  contas     Conta[]
-  categorias Categoria[]
-  terceiros  Terceiro[]
+  contas      Conta[]
+  cartoes     Cartao[]
+  terceiros   Terceiro[]
+  categorias  Categoria[]
+  transacoes  Transacao[]
+  ativos      Ativo[]
+  orcamentos  Orcamento[]
 }
 
-// Tabela de contas bancárias
 model Conta {
   id         Int    @id @default(autoincrement())
+  usuario_id Int
   nome       String
-  tipo       String
+  tipo       String // checking, savings, brokerage
   balanco    Float  @default(0.0)
 
-  // Chave estrangeira — toda conta pertence a um usuário
-  usuario_id Int
-  usuario    Usuario @relation(fields: [usuario_id], references: [id])
+  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
+  cartoes    Cartao[]
+  transacoes Transacao[]
 }
 
-// Tabela de categorias de transação
-model Categoria {
-  id   Int    @id @default(autoincrement())
-  nome String
-  tipo String
+model Cartao {
+  id            Int    @id @default(autoincrement())
+  conta_id      Int
+  usuario_id    Int
+  nome          String
+  limite        Float
+  dia_fechamento Int
+  dia_vencimento Int
 
-  usuario_id Int
-  usuario    Usuario @relation(fields: [usuario_id], references: [id])
+  conta      Conta       @relation(fields: [conta_id], references: [id])
+  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
+  transacoes Transacao[]
 }
 
-// Tabela de terceiros (pessoas/empresas envolvidas em transações)
 model Terceiro {
-  id   Int    @id @default(autoincrement())
-  nome String
-
+  id         Int    @id @default(autoincrement())
   usuario_id Int
-  usuario    Usuario @relation(fields: [usuario_id], references: [id])
+  nome       String
+
+  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
+  transacoes Transacao[]
+}
+
+model Categoria {
+  id         Int    @id @default(autoincrement())
+  usuario_id Int
+  nome       String
+  tipo       String // income, expense
+
+  usuario    Usuario     @relation(fields: [usuario_id], references: [id])
+  transacoes Transacao[]
+  orcamentos Orcamento[]
+}
+
+model Transacao {
+  id                 Int      @id @default(autoincrement())
+  usuario_id         Int
+  conta_id           Int?
+  cartao_id          Int?
+  categoria_id       Int
+  terceiro_id        Int?
+  valor              Float
+  tipo               String   // income, expense
+  data               DateTime
+  parcela_atual      Int      @default(1)
+  parcela_total      Int      @default(1)
+  pago               Boolean  @default(false)
+  descricao          String?
+  grupo_parcela_id   String?  // agrupa todas as parcelas de uma compra
+
+  usuario    Usuario    @relation(fields: [usuario_id], references: [id])
+  conta      Conta?     @relation(fields: [conta_id], references: [id])
+  cartao     Cartao?    @relation(fields: [cartao_id], references: [id])
+  categoria  Categoria  @relation(fields: [categoria_id], references: [id])
+  terceiro   Terceiro?  @relation(fields: [terceiro_id], references: [id])
+}
+
+model Ativo {
+  id           Int      @id @default(autoincrement())
+  usuario_id   Int
+  ticker       String
+  tipo         String   // stock, fii, crypto
+  quantidade   Float
+  preco_medio  Float
+  data_compra  DateTime
+
+  usuario Usuario @relation(fields: [usuario_id], references: [id])
+}
+
+model Orcamento {
+  id           Int   @id @default(autoincrement())
+  usuario_id   Int
+  categoria_id Int
+  mes          Int
+  ano          Int
+  valor_limite Float
+
+  usuario   Usuario   @relation(fields: [usuario_id], references: [id])
+  categoria Categoria @relation(fields: [categoria_id], references: [id])
 }
