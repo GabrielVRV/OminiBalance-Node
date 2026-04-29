@@ -178,5 +178,48 @@ async function me(req, res) {
   }
 }
 
+// Gera um novo access token usando o refresh token
+async function refresh(req, res) {
 
-module.exports = { register, login, me }
+  const schema = z.object({
+    refresh_token: z.string().min(1, 'Refresh token é obrigatório')
+  })
+
+  const resultado = schema.safeParse(req.body)
+
+  if (!resultado.success) {
+    return res.status(400).json({ message: 'Refresh token é obrigatório' })
+  }
+
+  const { refresh_token } = resultado.data
+
+  const userId = verificarToken(refresh_token, 'refresh')
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Refresh token inválido ou expirado' })
+  }
+
+  try {
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: userId }
+    })
+
+    if (!usuario || !usuario.ativo) {
+      return res.status(401).json({ message: 'Usuário não encontrado ou inativo' })
+    }
+
+    const novoAccessToken = criarTokenAcesso(usuario.id)
+
+    return res.json({
+      access_token: novoAccessToken,
+      token_type: 'bearer',
+      expires_in: env.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    })
+
+  } catch (erro) {
+    console.error(erro)
+    return res.status(500).json({ message: 'Erro interno do servidor' })
+  }
+}
+
+module.exports = { register, login, me, refresh }
